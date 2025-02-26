@@ -141,15 +141,17 @@ margin-top: 5px;
 } 
 </style> 
 </head> 
-<body> 
+<body>
+
 <h1>AI Adatbázis Címkekezelő</h1> 
 <div class="version-info"> 
-<p>Verzió: <span id="version-number">2.1</span></p> 
+<p>Verzió: <span id="version-number">2.2</span></p> 
 <button onclick="showVersionHistory()">Verzió Történet</button> 
 </div> 
 <div id="version-history-popup"> 
 <h3>Verzió Történet</h3> 
 <ul> 
+<li><strong>2.2</strong> – Kamera indítási hibák javítása, jobb hibakezelés a QR olvasáshoz.</li> 
 <li><strong>2.1</strong> – Telefon kamerás QR olvasás, foglalások dátum szerint mentése, dizájn finomhangolás.</li> 
 <li><strong>2.0</strong> – Új lapok hozzáadása (QR kód generálás, Foglalási Lista), dizájn színesítése, verzió kezelés.</li> 
 <li><strong>1.1</strong> – QR kódok testreszabása, szövegkezelés fejlesztése.</li> 
@@ -185,8 +187,8 @@ margin-top: 5px;
 <h2>QR Kód Olvasás (Foglalás)</h2> 
 <div id="qr-reader" style="width: 100%; max-width: 500px;"></div> 
 <div id="qr-reader-result" class="help-text"></div> 
-<button onclick="startQRReader()">Kamera Indítása</button> 
-<button onclick="stopQRReader()" style="display: none;">Kamera Leállítása</button> 
+<button id="start-camera-btn" onclick="startQRReader()">Kamera Indítása</button> 
+<button id="stop-camera-btn" onclick="stopQRReader()" style="display: none;">Kamera Leállítása</button> 
 <div id="qr-reader-error" class="error-message"></div> 
 </div> 
 <div id="lap3" class="lap-content"> 
@@ -202,6 +204,7 @@ margin-top: 5px;
 <li><b>Foglalási Lista:</b> Megjeleníti a foglalások listáját dátummal.</li> 
 </ul> 
 </div> 
+
 <script> 
 // Lapváltás 
 function showLap(lap) { 
@@ -248,14 +251,21 @@ console.log("QR kód generálva!");
 } 
 // QR kód olvasás telefon kamerával 
 let html5QrCode; 
-function startQRReader() { 
+async function startQRReader() { 
 if (html5QrCode) { 
 document.getElementById("qr-reader-error").textContent = "A kamera már fut. Előbb állítsd le!"; 
 return; 
 } 
+try { 
+// Ellenőrizzük, hogy a böngésző támogatja-e a MediaDevices API-t 
+if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { 
+document.getElementById("qr-reader-error").textContent = "Sajnos a böngésződ nem támogatja a kamera hozzáférést."; 
+return; 
+} 
+// Kamera inicializálása 
 html5QrCode = new Html5Qrcode("qr-reader"); 
-html5QrCode.start( 
-{ facingMode: "environment" }, 
+await html5QrCode.start( 
+{ facingMode: "environment" }, // Hátsó kamera mobiltelefonon 
 { 
 fps: 10, 
 qrbox: 250 
@@ -268,19 +278,23 @@ stopQRReader();
 (errorMessage) => { 
 document.getElementById("qr-reader-error").textContent = "Hiba az olvasás során: " + errorMessage; 
 } 
-).catch(err => { 
+); 
+document.getElementById("start-camera-btn").style.display = "none"; 
+document.getElementById("stop-camera-btn").style.display = "inline"; 
+} catch (err) { 
 document.getElementById("qr-reader-error").textContent = "Kamera indítási hiba: " + err.message; 
 console.error("Kamera indítási hiba:", err); 
-}); 
-document.querySelector("button[onclick='stopQRReader']").style.display = "inline"; 
 } 
+}
+
 function stopQRReader() { 
 if (html5QrCode) { 
 html5QrCode.stop().then(() => { 
 html5QrCode.clear(); 
 document.getElementById("qr-reader-result").textContent = "Kamera leállítva."; 
 document.getElementById("qr-reader-error").textContent = ""; 
-document.querySelector("button[onclick='stopQRReader']").style.display = "none"; 
+document.getElementById("start-camera-btn").style.display = "inline"; 
+document.getElementById("stop-camera-btn").style.display = "none"; 
 }).catch(err => { 
 document.getElementById("qr-reader-error").textContent = "Kamera leállítási hiba: " + err.message; 
 console.error("Kamera leállítási hiba:", err); 
