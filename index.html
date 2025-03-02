@@ -3,217 +3,85 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Adatbázis Címkekezelő</title>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/dist/html5-qrcode.min.js"></script>
+  <title>QR Kód Olvasó és Generáló</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 20px;
-      background-color: #f0f0f0;
-    }
-    nav {
-      margin-bottom: 20px;
-      background-color: #007BFF;
-      padding: 10px;
-      border-radius: 5px;
-    }
-    .nav-link {
-      margin-right: 15px;
-      cursor: pointer;
-      text-decoration: underline;
-      color: white;
-    }
-    .nav-link:hover {
-      color: #f0f0f0;
-    }
-    .lap-content {
-      display: none;
-    }
-    .active {
-      display: block;
-    }
-    .version-info {
-      margin-bottom: 20px;
-      background-color: #e0e0e0;
-      padding: 10px;
-      border-radius: 5px;
-    }#version-history-popup {
-      display: none;
-      background-color: #fff;
-      padding: 20px;
-      border: 1px solid #ccc;
-      max-width: 500px;
-      margin: 20px auto;
-    }
-    #version-history-popup h3 {
-      margin-top: 0;
-    }
-    #version-history-popup ul {
-      list-style-type: none;
-      padding-left: 0;
-    }
-    #version-history-popup li {
-      margin-bottom: 10px;
-    }
-    .cimke {
-      width: 60mm;
-      height: 30mm;
-      padding: 3mm;
-      border: 1px solid black;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-family: Arial, sans-serif;
-      font-size: 10px;
-      background-color: #ffffff;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      border-radius: 5px;
-    }
-    .qr-container {
-      width: 25mm;
-      height: 25mm;
       display: flex;
       justify-content: center;
       align-items: center;
-      margin-left: -3mm;
-      background-color: #f8f9fa;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-    .szoveg-container {
-      max-width: 60%;
-      text-align: left;
-      line-height: 1.5;
-      padding-left: 5mm;
-      padding-right: 5mm;
-      color: #333;
-      display: flex;
+      height: 100vh;
+      margin: 0;
       flex-direction: column;
-      justify-content: center;
     }
-    .szam {
-      font-weight: bold;
-      font-size: 14px;
-      margin-bottom: 5px;
+    #qr-reader {
+      width: 100%;
+      max-width: 400px;
+      height: auto;
     }
-    .input-group {
-      margin-bottom: 10px;
+    #qr-reader-result {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #333;
     }
-    .help-text {
-      font-size: 12px;
-      color: gray;
+    #qr-reader-error {
+      color: red;
+      margin-top: 10px;
     }
-    .help-text {
-      color: #007BFF;
-    }
-    h1 {
-      color: #007BFF;
+    .button-container {
+      margin-top: 20px;
     }
     button {
-      background-color: #007BFF;
-      color: white;
-      border: none;
-      padding: 10px 15px;
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 5px;
       cursor: pointer;
-      border-radius: 5px;
-      transition: background-color 0.3s;
     }
-    button:hover {
-      background-color: #0056b3;
+    #qr-code-image {
+      margin-top: 20px;
+      max-width: 250px;
+      max-height: 250px;
+    }
+    .input-container {
+      margin-top: 20px;
     }
     input[type="text"] {
-      padding: 5px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      width: 100%;
-      box-sizing: border-box;
-    }#qr-reader {
-      width: 100%;
-      max-width: 500px;
-      margin: 10px 0;
-    }
-    .error-message {
-      color: red;
-      font-size: 12px;
-      margin-top: 5px;
+      padding: 10px;
+      font-size: 16px;
+      width: 200px;
+      margin-right: 10px;
     }
   </style>
 </head>
 <body>
 
-  <h1>AI Adatbázis Címkekezelő</h1>
-  
-  <div class="version-info">
-    <p>Verzió: <span id="version-number">2.3</span></p>
-    <button onclick="showVersionHistory()">Verzió Történet</button>
+  <h1>QR Kód Olvasó és Generáló</h1>
+
+  <!-- QR kód olvasó -->
+  <div id="qr-reader"></div>
+  <div id="qr-reader-result">Olvasott kód: Nincs</div>
+  <div id="qr-reader-error"></div>
+
+  <!-- QR kód generálás -->
+  <div class="input-container">
+    <input type="text" id="qr-text" placeholder="Írj be szöveget a QR kódhoz">
+    <button onclick="generateQRCode()">QR Kód Generálása</button>
   </div>
-  <div id="version-history-popup">
-    <h3>Verzió Történet</h3>
-    <ul>
-      <li><strong>2.3</strong> – Javítva a html5-qrcode betöltési hibája, jobb hibakezelés a kamera indításához.</li>
-      <li><strong>2.2</strong> – Kamera indítási hibák javítása, jobb hibakezelés a QR olvasáshoz.</li>
-      <li><strong>2.1</strong> – Telefon kamerás QR olvasás, foglalások dátum szerint mentése, dizájn finomhangolás.</li>
-      <li><strong>2.0</strong> – Új lapok hozzáadása (QR kód generálás, Foglalási Lista), dizájn színesítése, verzió kezelés.</li>
-      <li><strong>1.1</strong> – QR kódok testreszabása, szövegkezelés fejlesztése.</li>
-      <li><strong>1.0</strong> – Alap QR kód generálás.</li>
-    </ul>
-    <button onclick="closeVersionHistory()">Bezárás</button>
+  <img id="qr-code-image" src="" alt="QR Kód" style="display:none;">
+
+  <div class="button-container">
+    <button id="start-camera-btn" onclick="startQRReader()">Kamera indítása</button>
+    <button id="stop-camera-btn" style="display:none;" onclick="stopQRReader()">Kamera leállítása</button>
   </div>
 
-  <nav>
-    <span class="nav-link" onclick="showLap(1)">QR Kód Generálás</span>
-    <span class="nav-link" onclick="showLap(2)">QR Kód Olvasás (Foglalás)</span>
-    <span class="nav-link" onclick="showLap(3)">Foglalási Lista</span>
-    <span class="nav-link" onclick="showLap(4)">Segítség</span>
-  </nav>
-
-  <div id="lap1" class="lap-content active">
-    <h2>QR Kód Generálás</h2>
-    <label for="text-input">Szöveg (Anyagszám + leírás):</label>
-    <input type="text" id="text-input" placeholder="Pl.: 7004567 Leírás" maxlength="60">
-    <div id="char-count" style="margin-top:10px;">Még <span id="remaining-chars">60</span> karakter maradt.</div>
-    <button onclick="generateQRCode()">QR Kód Generálás</button>
-    <div id="qr-error" class="error-message"></div>
-    <br><br>
-    <div class="cimke">
-      <div class="qr-container">
-        <canvas id="qrcode"></canvas>
-      </div>
-      <div class="szoveg-container">
-        <div id="szam" class="szam"></div>
-        <div id="szoveg" class="szoveg"></div>
-      </div>
-    </div>
-  </div>
-
-  <div id="lap2" class="lap-content">
-    <h2>QR Kód Olvasás (Foglalás)</h2>
-    <div id="qr-reader" style="width: 100%; max-width: 500px;"></div>
-    <div id="qr-reader-result" class="help-text"></div>
-    <button id="start-camera-btn" onclick="startQRReader()">Kamera Indítása</button>
-    <button id="stop-camera-btn" onclick="stopQRReader()" style="display: none;">Kamera Leállítása</button>
-    <div id="qr-reader-error" class="error-message"></div>
-  </div>
-
-  <div id="lap3" class="lap-content">
-    <h2>Foglalási Lista</h2>
-    <div id="foglalas-lista"></div>
-  </div>
-
-  <div id="lap4" class="lap-content">
-    <h2>Segítség</h2>
-    <p>A program különböző funkciók használatára szolgál:</p>
-    <ul>
-      <li><b>QR Kód Generálás:</b> Kódot generál az anyagszám és leírás alapján.</li>
-      <li><b>QR Kód Olvasás (Foglalás):</b> A telefon kamerájával olvassa be a QR kódot, és rögzíti a foglalást.</li>
-      <li><b>Foglalási Lista:</b> Megjeleníti a foglalások listáját dátummal.</li>
-    </ul>
-  </div>
+  <!-- A html5-qrcode és QRCode könyvtárak betöltése -->
+  <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
 
   <script>
     // Ellenőrizzük, hogy a html5-qrcode betöltődött-e
-function checkHtml5QrcodeLoaded() {
+    function checkHtml5QrcodeLoaded() {
       if (typeof Html5Qrcode === 'undefined') {
         document.getElementById("qr-reader-error").textContent = "Hiba: A html5-qrcode könyvtár nem töltődött be. Ellenőrizd az internetkapcsolatot vagy a CDN-t.";
         console.error("Html5Qrcode nem definiálva – a könyvtár nem töltődött be.");
@@ -222,153 +90,69 @@ function checkHtml5QrcodeLoaded() {
       return true;
     }
 
-    // Lapváltás
-    function showLap(lap) {
-      var lapok = document.querySelectorAll('.lap-content');
-      lapok.forEach(function(lapContent) {
-        lapContent.classList.remove('active');
+    // QR kód olvasás indítása
+    function startQRReader() {
+      if (!checkHtml5QrcodeLoaded()) return;
+
+      const qrReader = new Html5Qrcode("qr-reader");
+
+      // QR kód olvasása
+      qrReader.start(
+        { facingMode: "environment" }, 
+        {
+          fps: 10,    // olvasási sebesség (képkocka/másodperc)
+          qrbox: 250  // QR kód keresési terület
+        },
+        (decodedText, decodedResult) => {
+          document.getElementById("qr-reader-result").textContent = `Olvasott kód: ${decodedText}`;
+        },
+        (errorMessage) => {
+          // Ha hiba történik
+          document.getElementById("qr-reader-error").textContent = `Hiba: ${errorMessage}`;
+        }
+      ).catch(error => {
+        document.getElementById("qr-reader-error").textContent = `Kamera indítási hiba: ${error.message}`;
+        console.error("Kamera indítási hiba:", error);
       });
-      document.getElementById('lap' + lap).classList.add('active');
+
+      // A kamera leállítása
+      document.getElementById("start-camera-btn").style.display = "none";
+      document.getElementById("stop-camera-btn").style.display = "inline-block";
     }
 
-    // Verziótörténet megjelenítése és bezárása
-    function showVersionHistory() {
-      document.getElementById("version-history-popup").style.display = "block";
-    }
-    function closeVersionHistory() {
-      document.getElementById("version-history-popup").style.display = "none";
+    // QR kód olvasás leállítása
+    function stopQRReader() {
+      Html5Qrcode.getCameras().then(devices => {
+        if (devices && devices.length > 0) {
+          const qrReader = new Html5Qrcode("qr-reader");
+          qrReader.stop().then(() => {
+            document.getElementById("qr-reader-result").textContent = "A kamera leállt.";
+            document.getElementById("start-camera-btn").style.display = "inline-block";
+            document.getElementById("stop-camera-btn").style.display = "none";
+          }).catch((error) => {
+            document.getElementById("qr-reader-error").textContent = `Hiba a kamera leállításakor: ${error.message}`;
+            console.error("Kamera leállítási hiba:", error);
+          });
+        }
+      });
     }
 
-    // Karakter számláló a szövegbevitelnél
-    document.getElementById("text-input").addEventListener("input", function() {
-      var maxChars = 60;
-      var remaining = maxChars - this.value.length;
-      document.getElementById("remaining-chars").textContent = remaining;
-    });
-
-    // QR kód generálása fix mérettel
+    // QR kód generálása
     function generateQRCode() {
-      var text = document.getElementById("text-input").value.trim();
-      if (!text) {
-        document.getElementById("qr-error").textContent = "Kérlek, írj be valamilyen szöveget!";
+      var text = document.getElementById("qr-text").value;
+      if (text.trim() === "") {
+        alert("Kérlek, adj meg valamit a QR kódhoz!");
         return;
       }
-      var parts = text.split(" ");
-      var numberPart = parts.shift() || "";
-      var textPart = parts.join(" ") || "";
-      document.getElementById("szam").textContent = numberPart;
-      document.getElementById("szoveg").textContent = textPart;
-      QRCode.toCanvas(document.getElementById("qrcode"), text, { width: 95 }, function(error) {
-        if (error) {
-          document.getElementById("qr-error").textContent = "Hiba történt a QR-kód generálása közben: " + error.message;
-          console.error("QR Kód generálási hiba:", error);
-        } else {
-          document.getElementById("qr-error").textContent = "";
-          console.log("QR kód generálva!");
-        }
+
+      var qrCode = new QRCode(document.getElementById("qr-code-image"), {
+        text: text,
+        width: 200,
+        height: 200
       });
+
+      document.getElementById("qr-code-image").style.display = "block";
     }
-
-    // QR kód olvasás telefon kamerával
-    let html5QrCode;
-
-    async function startQRReader() {if (!checkHtml5QrcodeLoaded()) {
-        return;
-      }
-
-      if (html5QrCode) {
-        document.getElementById("qr-reader-error").textContent = "A kamera már fut. Előbb állítsd le!";
-        return;
-      }
-
-      try {
-        // Ellenőrizzük, hogy a böngésző támogatja-e a MediaDevices API-t
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          document.getElementById("qr-reader-error").textContent = "Sajnos a böngésződ nem támogatja a kamera hozzáférést.";
-          return;
-        }
-
-        // Kamera inicializálása
-        html5QrCode = new Html5Qrcode("qr-reader");
-        await html5QrCode.start(
-          { facingMode: "environment" }, // Hátsó kamera mobiltelefonon
-          {
-            fps: 10,
-            qrbox: 250
-          },
-          (decodedText, decodedResult) => {
-            document.getElementById("qr-reader-result").textContent = "QR Kód olvasva: " + decodedText;
-            processFoglalas(decodedText);
-            stopQRReader();
-          },
-          (errorMessage) => {
-            document.getElementById("qr-reader-error").textContent = "Hiba az olvasás során: " + errorMessage;
-          }
-        );
-        document.getElementById("start-camera-btn").style.display = "none";
-        document.getElementById("stop-camera-btn").style.display = "inline";
-      } catch (err) {
-        document.getElementById("qr-reader-error").textContent = "Kamera indítási hiba: " + err.message;
-        console.error("Kamera indítási hiba:", err);
-      }
-    }function stopQRReader() {
-      if (html5QrCode) {
-        html5QrCode.stop().then(() => {
-          html5QrCode.clear();
-          document.getElementById("qr-reader-result").textContent = "Kamera leállítva.";
-          document.getElementById("qr-reader-error").textContent = "";
-          document.getElementById("start-camera-btn").style.display = "inline";
-          document.getElementById("stop-camera-btn").style.display = "none";
-        }).catch(err => {
-          document.getElementById("qr-reader-error").textContent = "Kamera leállítási hiba: " + err.message;
-          console.error("Kamera leállítási hiba:", err);
-        });
-      }
-    }
-
-    // Foglalások tárolása és listázása dátummal
-    let foglalasok = JSON.parse(localStorage.getItem('foglalasok')) || [];
-
-    function saveFoglalas(cimkeInput) {
-      const currentDate = new Date().toLocaleString('hu-HU', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-      const foglalas = {
-        cimke: cimkeInput,
-        datum: currentDate
-      };
-      foglalasok.push(foglalas);
-      localStorage.setItem('foglalasok', JSON.stringify(foglalasok));
-      updateFoglalasLista();
-    }
-
-    function processFoglalas(cimkeInput) {
-      if (cimkeInput) {
-        document.getElementById("qr-reader-result").textContent = "Foglalás sikeresen végrehajtva: " + cimkeInput;
-        saveFoglalas(cimkeInput);
-      } else {
-        document.getElementById("qr-reader-error").textContent = "Hiba: Érvénytelen QR kód!";
-      }
-    }
-
-    function updateFoglalasLista() {
-      const lista = document.getElementById("foglalas-lista");
-      if (foglalasok.length > 0) {
-        lista.innerHTML = "<h3>Foglalások:</h3><ul>" + 
-          foglalasok.map(item => `<li>${item.cimke} – Dátum: ${item.datum}</li>`).join("") + 
-          "</ul>";
-      } else {
-        lista.innerHTML = "<p>Nincs foglalás.</p>";
-      }
-    }
-
-    // Lista inicializálása betöltéskor
-    window.onload = updateFoglalasLista;
   </script>
-
 </body>
 </html>
