@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Adatbázis Címkekezelő</title>
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/dist/html5-qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -38,7 +38,8 @@
       background-color: #e0e0e0;
       padding: 10px;
       border-radius: 5px;
-    }#version-history-popup {
+    }
+    #version-history-popup {
       display: none;
       background-color: #fff;
       padding: 20px;
@@ -128,10 +129,18 @@
       border-radius: 5px;
       width: 100%;
       box-sizing: border-box;
-    }#qr-reader {
+    }
+    #qr-reader {
       width: 100%;
       max-width: 500px;
       margin: 10px 0;
+    }
+    #qr-reader video {
+      width: 100%;
+      max-width: 500px;
+    }
+    #qr-reader canvas {
+      display: none;
     }
     .error-message {
       color: red;
@@ -189,7 +198,10 @@
 
   <div id="lap2" class="lap-content">
     <h2>QR Kód Olvasás (Foglalás)</h2>
-    <div id="qr-reader" style="width: 100%; max-width: 500px;"></div>
+    <div id="qr-reader">
+      <video id="video" style="width: 100%; max-width: 500px;"></video>
+      <canvas id="canvas"></canvas>
+    </div>
     <div id="qr-reader-result" class="help-text"></div>
     <button id="start-camera-btn" onclick="startQRReader()">Kamera Indítása</button>
     <button id="stop-camera-btn" onclick="stopQRReader()" style="display: none;">Kamera Leállítása</button>
@@ -212,16 +224,6 @@
   </div>
 
   <script>
-    // Ellenőrizzük, hogy a html5-qrcode betöltődött-e
-function checkHtml5QrcodeLoaded() {
-      if (typeof Html5Qrcode === 'undefined') {
-        document.getElementById("qr-reader-error").textContent = "Hiba: A html5-qrcode könyvtár nem töltődött be. Ellenőrizd az internetkapcsolatot vagy a CDN-t.";
-        console.error("Html5Qrcode nem definiálva – a könyvtár nem töltődött be.");
-        return false;
-      }
-      return true;
-    }
-
     // Lapváltás
     function showLap(lap) {
       var lapok = document.querySelectorAll('.lap-content');
@@ -269,60 +271,70 @@ function checkHtml5QrcodeLoaded() {
       });
     }
 
-    // QR kód olvasás telefon kamerával
-    let html5QrCode;
+    // QR kód olvasás jsQR-rel
+    let videoStream = null;
+    let isScanning = false;
 
-    async function startQRReader() {if (!checkHtml5QrcodeLoaded()) {
-        return;
-      }
-
-      if (html5QrCode) {
+    function startQRReader() {
+      if (isScanning) {
         document.getElementById("qr-reader-error").textContent = "A kamera már fut. Előbb állítsd le!";
         return;
       }
 
-      try {
-        // Ellenőrizzük, hogy a böngésző támogatja-e a MediaDevices API-t
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          document.getElementById("qr-reader-error").textContent = "Sajnos a böngésződ nem támogatja a kamera hozzáférést.";
-          return;
-        }
+      const video = document.getElementById("video");
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
 
-        // Kamera inicializálása
-        html5QrCode = new Html5Qrcode("qr-reader");
-        await html5QrCode.start(
-          { facingMode: "environment" }, // Hátsó kamera mobiltelefonon
-          {
-            fps: 10,
-            qrbox: 250
-          },
-          (decodedText, decodedResult) => {
-            document.getElementById("qr-reader-result").textContent = "QR Kód olvasva: " + decodedText;
-            processFoglalas(decodedText);
-            stopQRReader();
-          },
-          (errorMessage) => {
-            document.getElementById("qr-reader-error").textContent = "Hiba az olvasás során: " + errorMessage;
-          }
-        );
-        document.getElementById("start-camera-btn").style.display = "none";
-        document.getElementById("stop-camera-btn").style.display = "inline";
-      } catch (err) {
-        document.getElementById("qr-reader-error").textContent = "Kamera indítási hiba: " + err.message;
-        console.error("Kamera indítási hiba:", err);
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        document.getElementById("qr-reader-error").textContent = "Sajnos a böngésződ nem támogatja a kamera hozzáférést.";
+        return;
       }
-    }function stopQRReader() {
-      if (html5QrCode) {
-        html5QrCode.stop().then(() => {
-          html5QrCode.clear();
-          document.getElementById("qr-reader-result").textContent = "Kamera leállítva.";
+
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+        .then(stream => {
+          videoStream = stream;
+          video.srcObject = stream;
+          video.play();
+          isScanning = true;
+          document.getElementById("start-camera-btn").style.display = "none";
+          document.getElementById("stop-camera-btn").style.display = "inline";
           document.getElementById("qr-reader-error").textContent = "";
-          document.getElementById("start-camera-btn").style.display = "inline";
-          document.getElementById("stop-camera-btn").style.display = "none";
-        }).catch(err => {
-          document.getElementById("qr-reader-error").textContent = "Kamera leállítási hiba: " + err.message;
-          console.error("Kamera leállítási hiba:", err);
+          scanQRCode(video, canvas, ctx);
+        })
+        .catch(err => {
+          document.getElementById("qr-reader-error").textContent = "Kamera indítási hiba: " + err.message;
+          console.error("Kamera indítási hiba:", err);
         });
+    }
+
+    function scanQRCode(video, canvas, ctx) {
+      if (!isScanning) return;
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+      if (code) {
+        document.getElementById("qr-reader-result").textContent = "QR Kód olvasva: " + code.data;
+        processFoglalas(code.data);
+        stopQRReader();
+      } else {
+        document.getElementById("qr-reader-result").textContent = "QR kód keresése...";
+        requestAnimationFrame(() => scanQRCode(video, canvas, ctx));
+      }
+    }
+
+    function stopQRReader() {
+      if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+        videoStream = null;
+        isScanning = false;
+        document.getElementById("qr-reader-result").textContent = "Kamera leállítva.";
+        document.getElementById("qr-reader-error").textContent = "";
+        document.getElementById("start-camera-btn").style.display = "inline";
+        document.getElementById("stop-camera-btn").style.display = "none";
       }
     }
 
