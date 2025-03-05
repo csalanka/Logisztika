@@ -270,64 +270,74 @@
         }
       });
     }
+
     // QR kód olvasás jsQR-rel
-let videoStream = null;
-let isScanning = false;
+    let videoStream = null;
+    let isScanning = false;
 
-function startQRReader() {
-  if (isScanning) {
-    document.getElementById("qr-reader-error").textContent = "A kamera már fut. Előbb állítsd le!";
-    return;
-  }
+    function startQRReader() {
+      if (isScanning) {
+        document.getElementById("qr-reader-error").textContent = "A kamera már fut. Előbb állítsd le!";
+        return;
+      }
 
-  const video = document.getElementById("video");
-  const canvas = document.getElementById("canvas");
-  const ctx = canvas.getContext("2d");
+      const video = document.getElementById("video");
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
 
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    document.getElementById("qr-reader-error").textContent = "Sajnos a böngésződ nem támogatja a kamera hozzáférést.";
-    return;
-  }
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        document.getElementById("qr-reader-error").textContent = "Sajnos a böngésződ nem támogatja a kamera hozzáférést.";
+        return;
+      }
 
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-    .then(stream => {
-      videoStream = stream;
-      video.srcObject = stream;
-      video.play();
-      isScanning = true;
-      document.getElementById("start-camera-btn").style.display = "none";
-      document.getElementById("stop-camera-btn").style.display = "inline";
-      document.getElementById("qr-reader-error").textContent = "";
+      navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: "environment",
+          width: { ideal: 640 }, // Kisebb felbontás a Xiaomi Pad 6 Pro-hoz
+          height: { ideal: 480 }
+        } 
+      })
+        .then(stream => {
+          videoStream = stream;
+          video.srcObject = stream;
+          video.play();
+          isScanning = true;
+          document.getElementById("start-camera-btn").style.display = "none";
+          document.getElementById("stop-camera-btn").style.display = "inline";
+          document.getElementById("qr-reader-error").textContent = "";
 
-      // Várjuk meg, amíg a videó metaadatai betöltődnek
-      video.onloadedmetadata = () => {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        scanQRCode(video, canvas, ctx);
-      };
-    })
-    .catch(err => {
-      document.getElementById("qr-reader-error").textContent = "Kamera indítási hiba: " + err.message;
-      console.error("Kamera indítási hiba:", err);
-    });
-}
+          video.onloadedmetadata = () => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            console.log("Videó mérete: " + video.videoWidth + "x" + video.videoHeight);
+            scanQRCode(video, canvas, ctx);
+          };
+        })
+        .catch(err => {
+          document.getElementById("qr-reader-error").textContent = "Kamera indítási hiba: " + err.message;
+          console.error("Kamera indítási hiba:", err);
+        });
+    }
 
-function scanQRCode(video, canvas, ctx) {
-  if (!isScanning) return;
+    function scanQRCode(video, canvas, ctx) {
+      if (!isScanning) return;
 
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const code = jsQR(imageData.data, imageData.width, imageData.height);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height);
 
-  if (code) {
-    document.getElementById("qr-reader-result").textContent = "QR Kód olvasva: " + code.data;
-    processFoglalas(code.data);
-    stopQRReader();
-  } else {
-    document.getElementById("qr-reader-result").textContent = "QR kód keresése...";
-    requestAnimationFrame(() => scanQRCode(video, canvas, ctx));
-  }
-}
+      if (code) {
+        console.log("QR kód megtalálva:", code.data);
+        document.getElementById("qr-reader-result").textContent = "QR Kód olvasva: " + code.data;
+        processFoglalas(code.data);
+        stopQRReader();
+      } else {
+        console.log("Nincs QR kód a képen");
+        document.getElementById("qr-reader-result").textContent = "QR kód keresése...";
+        setTimeout(() => requestAnimationFrame(() => scanQRCode(video, canvas, ctx)), 100); // 100ms szünet
+      }
+    }
+
     function stopQRReader() {
       if (videoStream) {
         videoStream.getTracks().forEach(track => track.stop());
