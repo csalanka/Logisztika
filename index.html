@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Adatbázis Címkekezelő</title>
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js"></script>
+  <!-- Helyi jsQR fájl használata a CDN helyett -->
+  <script src="jsQR.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -154,13 +155,13 @@
   <h1>AI Adatbázis Címkekezelő</h1>
   
   <div class="version-info">
-    <p>Verzió: <span id="version-number">2.3.2</span></p>
+    <p>Verzió: <span id="version-number">2.3.1</span></p>
     <button onclick="showVersionHistory()">Verzió Történet</button>
   </div>
   <div id="version-history-popup">
     <h3>Verzió Történet</h3>
     <ul>
-      <li><strong>2.3.1</strong> – QR olvasás finomhangolása jsQR-rel, kisebb videó felbontás (320x240), lassabb szkennelési ciklus.</li>
+      <li><strong>2.3.1</strong> – QR olvasás finomhangolása jsQR-rel, helyi jsQR.min.js használata, közepes felbontás (640x480).</li>
       <li><strong>2.3</strong> – Javítva a html5-qrcode betöltési hibája, jobb hibakezelés a kamera indításához.</li>
       <li><strong>2.2</strong> – Kamera indítási hibák javítása, jobb hibakezelés a QR olvasáshoz.</li>
       <li><strong>2.1</strong> – Telefon kamerás QR olvasás, foglalások dátum szerint mentése, dizájn finomhangolás.</li>
@@ -294,7 +295,7 @@
       navigator.mediaDevices.getUserMedia({ 
         video: { 
           facingMode: "environment",
-          width: { ideal: 640 }, // Közepes felbontás visszaállítása
+          width: { ideal: 640 }, // Közepes felbontás
           height: { ideal: 480 }
         } 
       })
@@ -326,9 +327,8 @@
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       console.log("Képkocka feldolgozása: " + canvas.width + "x" + canvas.height);
-      // jsQR pontosabb felismeréshez opciók hozzáadása
       const code = jsQR(imageData.data, imageData.width, imageData.height, {
-        inversionAttempts: "dontInvert" // Csak normál képet próbáljon
+        inversionAttempts: "dontInvert"
       });
 
       if (code) {
@@ -339,7 +339,7 @@
       } else {
         console.log("Nincs QR kód a képen");
         document.getElementById("qr-reader-result").textContent = "QR kód keresése...";
-        requestAnimationFrame(() => scanQRCode(video, canvas, ctx)); // Vissza requestAnimationFrame
+        requestAnimationFrame(() => scanQRCode(video, canvas, ctx));
       }
     }
 
@@ -398,7 +398,6 @@
     // Lista inicializálása betöltéskor
     window.onload = updateFoglalasLista;
   </script>
- 
 
 </body>
 </html>
