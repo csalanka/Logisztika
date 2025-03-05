@@ -160,6 +160,7 @@
   <div id="version-history-popup">
     <h3>Verzió Történet</h3>
     <ul>
+      <li><strong>2.3.1</strong> – QR olvasás finomhangolása jsQR-rel, kisebb videó felbontás (320x240), lassabb szkennelési ciklus.</li>
       <li><strong>2.3</strong> – Javítva a html5-qrcode betöltési hibája, jobb hibakezelés a kamera indításához.</li>
       <li><strong>2.2</strong> – Kamera indítási hibák javítása, jobb hibakezelés a QR olvasáshoz.</li>
       <li><strong>2.1</strong> – Telefon kamerás QR olvasás, foglalások dátum szerint mentése, dizájn finomhangolás.</li>
@@ -293,8 +294,8 @@
       navigator.mediaDevices.getUserMedia({ 
         video: { 
           facingMode: "environment",
-          width: { ideal: 640 }, // Kisebb felbontás a Xiaomi Pad 6 Pro-hoz
-          height: { ideal: 480 }
+          width: { ideal: 320 }, // Még kisebb felbontás a gyorsabb feldolgozásért
+          height: { ideal: 240 }
         } 
       })
         .then(stream => {
@@ -324,6 +325,7 @@
 
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      console.log("Képkocka feldolgozása: " + canvas.width + "x" + canvas.height);
       const code = jsQR(imageData.data, imageData.width, imageData.height);
 
       if (code) {
@@ -334,7 +336,7 @@
       } else {
         console.log("Nincs QR kód a képen");
         document.getElementById("qr-reader-result").textContent = "QR kód keresése...";
-        setTimeout(() => requestAnimationFrame(() => scanQRCode(video, canvas, ctx)), 100); // 100ms szünet
+        setTimeout(() => requestAnimationFrame(() => scanQRCode(video, canvas, ctx)), 200); // Lassabb ciklus
       }
     }
 
