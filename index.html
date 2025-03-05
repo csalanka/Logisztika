@@ -294,8 +294,8 @@
       navigator.mediaDevices.getUserMedia({ 
         video: { 
           facingMode: "environment",
-          width: { ideal: 320 }, // Még kisebb felbontás a gyorsabb feldolgozásért
-          height: { ideal: 240 }
+          width: { ideal: 640 }, // Közepes felbontás visszaállítása
+          height: { ideal: 480 }
         } 
       })
         .then(stream => {
@@ -326,7 +326,10 @@
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       console.log("Képkocka feldolgozása: " + canvas.width + "x" + canvas.height);
-      const code = jsQR(imageData.data, imageData.width, imageData.height);
+      // jsQR pontosabb felismeréshez opciók hozzáadása
+      const code = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: "dontInvert" // Csak normál képet próbáljon
+      });
 
       if (code) {
         console.log("QR kód megtalálva:", code.data);
@@ -336,7 +339,7 @@
       } else {
         console.log("Nincs QR kód a képen");
         document.getElementById("qr-reader-result").textContent = "QR kód keresése...";
-        setTimeout(() => requestAnimationFrame(() => scanQRCode(video, canvas, ctx)), 200); // Lassabb ciklus
+        requestAnimationFrame(() => scanQRCode(video, canvas, ctx)); // Vissza requestAnimationFrame
       }
     }
 
@@ -395,6 +398,7 @@
     // Lista inicializálása betöltéskor
     window.onload = updateFoglalasLista;
   </script>
+ 
 
 </body>
 </html>
