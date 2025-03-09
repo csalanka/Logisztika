@@ -168,12 +168,13 @@
   <h1>AI Adatbázis Címkekezelő</h1>
   
   <div class="version-info">
-    <p>Verzió: <span id="version-number">2.3.9</span></p>
+    <p>Verzió: <span id="version-number">2.3.10</span></p>
     <button onclick="showVersionHistory()">Verzió Történet</button>
   </div>
   <div id="version-history-popup">
     <h3>Verzió Történet</h3>
     <ul>
+      <li><strong>2.3.10</strong> – Javítva a belső rendelési számok és költséghelyek megjelenítése a Foglalási Lista és Beállítások lapon; biztosítva a helyes localStorage inicializálás.</li>
       <li><strong>2.3.9</strong> – Az M2B-terület gépeinek költséghely száma egységesen 15009131-re frissítve.</li>
       <li><strong>2.3.8</strong> – Hozzáadva a 2.5.1-es funkciók (kivét/bevétel kódok, raktárak, darabszám bevitel, sorszámos foglalási lap), M2B gépek belső rendelési szám nélkül.</li>
       <li><strong>2.3.7</strong> – Teljes géplista (222 gép) hozzáadva a 2.5.1-es verzió alapján, belső rendelési számok és költséghely számok részben beillesztve.</li>
@@ -284,6 +285,7 @@
             <th>Terület</th>
             <th>Gép neve</th>
             <th>Belső megrendelési szám</th>
+            <th>Költséghely szám</th>
             <th>Kivét/Bevétel</th>
             <th>Raktár</th>
             <th>Darabszám</th>
@@ -344,6 +346,7 @@
       });
       document.getElementById('lap' + lap).classList.add('active');
       if (lap === 2) updateMachineDropdown();
+      if (lap === 5) updateMachineTable();
     }
 
     // Verziótörténet megjelenítése és bezárása
@@ -480,15 +483,19 @@
       const currentDate = new Date().toLocaleString('hu-HU', {
         year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
       });
-      const gepAdatok = JSON.parse(localStorage.getItem('gepek')) || defaultGepLista;
+
+      // Gép adatainak lekérdezése
+      let gepAdatok = JSON.parse(localStorage.getItem('gepek')) || defaultGepLista;
       const gep = gepAdatok[selectedTerulet]?.find(g => g.nev === selectedMachine) || {};
+
       const foglalas = {
         sorszam: foglalasok.length + 1,
         anyagszam: anyagszam,
         megnevezes: megnevezes,
         terulet: selectedTerulet,
         gepNev: selectedMachine,
-        belsoMegrendelesiSzam: gep.rendelesiSzam || "",
+        belsoMegrendelesiSzam: gep.rendelesiSzam || "N/A",
+        koltseghelySzam: gep.koltseghelySzam || "N/A",
         kivetBevetel: kivetBevetel,
         raktar: raktar,
         darabszam: darabszam,
@@ -536,6 +543,7 @@
             <td>${item.terulet}</td>
             <td>${item.gepNev}</td>
             <td>${item.belsoMegrendelesiSzam}</td>
+            <td>${item.koltseghelySzam}</td>
             <td>${item.kivetBevetel}</td>
             <td>${item.raktar}</td>
             <td>${item.darabszam}</td>
@@ -545,7 +553,7 @@
           </tr>
         `).join("");
       } else {
-        tbody.innerHTML = "<tr><td colspan='12'>Nincs foglalás.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='13'>Nincs foglalás.</td></tr>";
       }
     }
 
@@ -563,6 +571,11 @@
           checkPasswordForAll();
         } else if (confirm(`Biztosan törlöd a ${window.deleteIndex + 1}. rekordot?`)) {
           foglalasok.splice(window.deleteIndex, 1);
+          // Sorszámok újraszámozása törlés után
+          foglalasok = foglalasok.map((foglalas, index) => ({
+            ...foglalas,
+            sorszam: index + 1
+          }));
           localStorage.setItem('foglalasok', JSON.stringify(foglalasok));
           updateFoglalasLista();
           alert("A rekord törölve");
@@ -833,25 +846,42 @@
       ]
     };
 
-    let gepek = JSON.parse(localStorage.getItem('gepek')) || defaultGepLista;
+    // Inicializálás: Ha a localStorage üres, a defaultGepLista-t használjuk
+    let gepek = JSON.parse(localStorage.getItem('gepek'));
+    if (!gepek || Object.keys(gepek).length === 0) {
+      gepek = defaultGepLista;
+      localStorage.setItem('gepek', JSON.stringify(gepek));
+    }
 
     function updateMachineTable() {
       const tbody = document.getElementById("machine-body");
       tbody.innerHTML = "";
       for (let terulet in gepek) {
-        gepek[terulet].forEach(gep => {
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${terulet}</td>
-            <td>${gep.nev}</td>
-            <td>${gep.rendelesiSzam || 'N/A'}</td>
-            <td>${gep.koltseghelySzam}</td>
-            <td><button onclick="deleteMachine('${terulet}', '${gep.nev}')" style="background-color: #FF0000; color: white; width: 30px; height: 30px; border: none; border-radius: 5px;">T</button></td>
-          `;
-          tbody.appendChild(row);
-        });
+        if (gepek[terulet] && Array.isArray(gepek[terulet])) {
+          gepek[terulet].forEach(gep => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+              <td>${terulet}</td>
+              <td>${gep.nev}</td>
+              <td>${gep.rendelesiSzam || 'N/A'}</td>
+              <td>${gep.koltseghelySzam || 'N/A'}</td>
+              <td><button onclick="deleteMachine('${terulet}', '${gep.nev}')" style="background-color: #FF0000; color: white; width: 30px; height: 30px; border: none; border-radius: 5px;">T</button></td>
+            `;
+            tbody.appendChild(row);
+          });
+        }
       }
       localStorage.setItem('gepek', JSON.stringify(gepek));
+    }
+
+    function deleteMachine(terulet, nev) {
+      if (confirm(`Biztosan törlöd a(z) ${nev} gépet a(z) ${terulet} területről?`)) {
+        gepek[terulet] = gepek[terulet].filter(gep => gep.nev !== nev);
+        if (gepek[terulet].length === 0) delete gepek[terulet];
+        localStorage.setItem('gepek', JSON.stringify(gepek));
+        updateMachineTable();
+        updateMachineDropdown();
+      }
     }
 
     function addMachine() {
