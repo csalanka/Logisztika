@@ -120,7 +120,7 @@
     button:hover {
       background-color: #0056b3;
     }
-    input[type="text"], input[type="password"], select {
+    input[type="text"], input[type="number"], select {
       padding: 5px;
       border: 1px solid #ccc;
       border-radius: 5px;
@@ -160,6 +160,18 @@
     th {
       background-color: #007BFF;
       color: white;
+    }
+    #delete-password-popup, #settings-password-popup, #edit-machine-popup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: #fff;
+      padding: 20px;
+      border: 1px solid #ccc;
+      max-width: 300px;
+      text-align: center;
     }
   </style>
 </head>
@@ -235,7 +247,7 @@
     <div class="input-group">
       <label for="select-machine">Gép kiválasztása:</label>
       <select id="select-machine" style="margin: 10px 0; width: 100%; max-width: 500px;">
-        <!-- Gépek dinamikusan töltődnek -->
+        <option value="">Válassz gépet</option>
       </select>
     </div>
     <div class="input-group">
@@ -269,22 +281,22 @@
   <div id="lap3" class="lap-content">
     <h2>Foglalási Lista</h2>
     <button id="delete-all-btn-top" style="background-color: #FF0000; color: white;">Törlés összes rekord</button>
-    <div id="foglalas-tablazat" style="overflow-x: auto; margin-top: 10px;">
-      <table style="width: 100%; border-collapse: collapse; border: 1px solid #ccc;">
+    <div id="foglalas-tablazat">
+      <table>
         <thead>
-          <tr style="background-color: #007BFF; color: white;">
-            <th style="padding: 5px; width: 50px;">Sorszám</th>
-            <th style="padding: 5px; width: 100px;">Anyagszám</th>
-            <th style="padding: 5px; width: 150px;">Megnevezés</th>
-            <th style="padding: 5px; width: 80px;">Terület</th>
-            <th style="padding: 5px; width: 150px;">Gép neve</th>
-            <th style="padding: 5px; width: 150px;">Belső megrendelési szám</th>
-            <th style="padding: 5px; width: 80px;">Kivét/Bevétel</th>
-            <th style="padding: 5px; width: 80px;">Raktár</th>
-            <th style="padding: 5px; width: 80px;">Darabszám</th>
-            <th style="padding: 5px; width: 150px;">QR-kód</th>
-            <th style="padding: 5px; width: 150px;">Dátum</th>
-            <th style="padding: 5px; width: 30px;"></th>
+          <tr>
+            <th>Sorszám</th>
+            <th>Anyagszám</th>
+            <th>Megnevezés</th>
+            <th>Terület</th>
+            <th>Gép neve</th>
+            <th>Belső megrendelési szám</th>
+            <th>Kivét/Bevétel</th>
+            <th>Raktár</th>
+            <th>Darabszám</th>
+            <th>QR-kód</th>
+            <th>Dátum</th>
+            <th></th>
           </tr>
         </thead>
         <tbody id="foglalas-body"></tbody>
@@ -304,19 +316,19 @@
     </ul>
   </div>
 
-  <div id="lap5" class="lap-content" style="display: none;">
+  <div id="lap5" class="lap-content">
     <h2>Beállítások</h2>
     <button id="add-machine-btn" style="background-color: #007BFF; color: white; padding: 10px 15px; border: none; border-radius: 5px;">Új gép hozzáadása</button>
-    <div id="settings-table" style="overflow-x: auto; margin-top: 10px;">
-      <table style="width: 100%; border-collapse: collapse; border: 1px solid #ccc;">
+    <div id="settings-table">
+      <table>
         <thead>
-          <tr style="background-color: #007BFF; color: white;">
-            <th style="padding: 5px; width: 50px;">Sorszám</th>
-            <th style="padding: 5px; width: 200px;">Gép neve</th>
-            <th style="padding: 5px; width: 150px;">Terület</th>
-            <th style="padding: 5px; width: 150px;">Belső megrendelési szám</th>
-            <th style="padding: 5px; width: 100px;">Költséghely</th>
-            <th style="padding: 5px; width: 100px;">Műveletek</th>
+          <tr>
+            <th>Sorszám</th>
+            <th>Gép neve</th>
+            <th>Terület</th>
+            <th>Belső megrendelési szám</th>
+            <th>Költséghely</th>
+            <th>Műveletek</th>
           </tr>
         </thead>
         <tbody id="machine-body"></tbody>
@@ -324,35 +336,35 @@
     </div>
   </div>
 
-  <div id="delete-password-popup" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #fff; padding: 20px; border: 1px solid #ccc; max-width: 300px; text-align: center;">
+  <div id="delete-password-popup">
     <h3>Kérlek, add meg az admin jelszót a törléshez!</h3>
     <input type="password" id="delete-password" style="padding: 5px; width: 200px; margin-bottom: 10px;">
     <div id="delete-password-error" style="color: red; font-size: 12px; margin-top: 5px;"></div>
-    <button onclick="checkPassword()" style="background-color: #007BFF; color: white; padding: 10px; border: none; border-radius: 5px;">OK</button>
-    <button onclick="document.getElementById('delete-password-popup').style.display='none'; document.getElementById('delete-password').value=''; document.getElementById('delete-password-error').textContent='';" style="background-color: #ccc; color: black; padding: 10px; border: none; border-radius: 5px; margin-left: 10px;">Mégse</button>
+    <button onclick="checkPassword()">OK</button>
+    <button onclick="document.getElementById('delete-password-popup').style.display='none'; document.getElementById('delete-password').value=''; document.getElementById('delete-password-error').textContent='';">Mégse</button>
   </div>
 
-  <div id="settings-password-popup" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #fff; padding: 20px; border: 1px solid #ccc; max-width: 300px; text-align: center;">
+  <div id="settings-password-popup">
     <h3>Kérlek, add meg az admin jelszót a Beállítási oldalhoz!</h3>
     <input type="password" id="settings-password" style="padding: 5px; width: 200px; margin-bottom: 10px;">
     <div id="settings-password-error" style="color: red; font-size: 12px; margin-top: 5px;"></div>
-    <button onclick="checkSettingsPassword()" style="background-color: #007BFF; color: white; padding: 10px; border: none; border-radius: 5px;">OK</button>
-    <button onclick="document.getElementById('settings-password-popup').style.display='none'; document.getElementById('settings-password').value=''; document.getElementById('settings-password-error').textContent='';" style="background-color: #ccc; color: black; padding: 10px; border: none; border-radius: 5px; margin-left: 10px;">Mégse</button>
+    <button onclick="checkSettingsPassword()">OK</button>
+    <button onclick="document.getElementById('settings-password-popup').style.display='none'; document.getElementById('settings-password').value=''; document.getElementById('settings-password-error').textContent='';">Mégse</button>
   </div>
 
-  <div id="edit-machine-popup" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #fff; padding: 20px; border: 1px solid #ccc; max-width: 400px; text-align: center;">
+  <div id="edit-machine-popup">
     <h3>Gép szerkesztése</h3>
-    <input type="text" id="edit-machine-name" style="padding: 5px; width: 300px; margin-bottom: 10px;" placeholder="Gép neve">
-    <select id="edit-machine-terulet" style="padding: 5px; width: 300px; margin-bottom: 10px;">
+    <input type="text" id="edit-machine-name" style="padding: 5px; width: 200px; margin-bottom: 10px;" placeholder="Gép neve">
+    <select id="edit-machine-terulet" style="padding: 5px; width: 200px; margin-bottom: 10px;">
       <option value="MFC-terület">MFC-terület</option>
       <option value="MFS-terület">MFS-terület</option>
       <option value="MFH-terület">MFH-terület</option>
       <option value="M2B-terület">M2B-terület</option>
     </select>
-    <input type="text" id="edit-machine-belsoszam" style="padding: 5px; width: 300px; margin-bottom: 10px;" placeholder="Belső megrendelési szám">
-    <input type="text" id="edit-machine-koltseghely" style="padding: 5px; width: 300px; margin-bottom: 10px;" placeholder="Költséghely">
-    <button onclick="saveMachineEdit()" style="background-color: #007BFF; color: white; padding: 10px; border: none; border-radius: 5px;">Mentés</button>
-    <button onclick="document.getElementById('edit-machine-popup').style.display='none'; document.getElementById('edit-machine-name').value=''; document.getElementById('edit-machine-belsoszam').value=''; document.getElementById('edit-machine-koltseghely').value='';" style="background-color: #ccc; color: black; padding: 10px; border: none; border-radius: 5px; margin-left: 10px;">Mégse</button>
+    <input type="text" id="edit-machine-belsoszam" style="padding: 5px; width: 200px; margin-bottom: 10px;" placeholder="Belső megrendelési szám">
+    <input type="text" id="edit-machine-koltseghely" style="padding: 5px; width: 200px; margin-bottom: 10px;" placeholder="Költséghely">
+    <button onclick="saveMachineEdit()">Mentés</button>
+    <button onclick="document.getElementById('edit-machine-popup').style.display='none'; document.getElementById('edit-machine-name').value=''; document.getElementById('edit-machine-belsoszam').value=''; document.getElementById('edit-machine-koltseghely').value='';">Mégse</button>
   </div>
 
   <script>
@@ -364,41 +376,33 @@
       });
       document.getElementById('lap' + lap).classList.add('active');
       if (lap === 2) updateMachineDropdown(); // Gépek frissítése QR olvasás lapon
+      if (lap === 5 && !document.getElementById('settings-password-popup').style.display) checkSettingsPassword(); // Beállítások jelszó ellenőrzés
     }
 
-    // Verziótörténet megjelenítése és bezárása
-    function showVersionHistory() {
-      document.getElementById("version-history-popup").style.display = "block";
-    }
-    function closeVersionHistory() {
-      document.getElementById("version-history-popup").style.display = "none";
-    }
+    // Verziótörténet
+    function showVersionHistory() { document.getElementById("version-history-popup").style.display = "block"; }
+    function closeVersionHistory() { document.getElementById("version-history-popup").style.display = "none"; }
 
-    // Karakter számláló a szövegbevitelnél
+    // Karakter számláló
     document.getElementById("text-input").addEventListener("input", function() {
       var maxChars = 60;
       var remaining = maxChars - this.value.length;
       document.getElementById("remaining-chars").textContent = remaining;
     });
 
-    // QR kód generálása fix mérettel
+    // QR kód generálása (te verziód alapján)
     function generateQRCode() {
       var text = document.getElementById("text-input").value.trim();
       if (!text) {
         document.getElementById("qr-error").textContent = "Kérlek, írj be valamilyen szöveget!";
         return;
       }
-      // Eredeti formátum: szóközökkel elválasztva (pl. "7004567 Leírás")
       var parts = text.split(" ");
-      var anyagszam = parts[0] || "";
-      var textPart = parts.slice(1).join(" ") || "";
-      document.getElementById("szam").textContent = anyagszam;
+      var numberPart = parts.shift() || "";
+      var textPart = parts.join(" ") || "";
+      document.getElementById("szam").textContent = numberPart;
       document.getElementById("szoveg").textContent = textPart;
-
-      var qrcodeCanvas = document.getElementById("qrcode");
-      qrcodeCanvas.width = 95; // Biztosítjuk a canvas méretét
-      qrcodeCanvas.height = 95;
-      QRCode.toCanvas(qrcodeCanvas, text, { width: 95 }, function (error) {
+      QRCode.toCanvas(document.getElementById("qrcode"), text, { width: 95 }, function(error) {
         if (error) {
           document.getElementById("qr-error").textContent = "Hiba történt a QR-kód generálása közben: " + error.message;
           console.error("QR Kód generálási hiba:", error);
@@ -409,7 +413,7 @@
       });
     }
 
-    // QR kód olvasás jsQR-rel
+    // QR olvasás
     let videoStream = null;
     let isScanning = false;
 
@@ -428,13 +432,7 @@
         return;
       }
 
-      navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          facingMode: "environment",
-          width: { ideal: 640 }, 
-          height: { ideal: 480 }
-        } 
-      })
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 480 } } })
         .then(stream => {
           videoStream = stream;
           video.srcObject = stream;
@@ -447,7 +445,6 @@
           video.onloadedmetadata = () => {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-            console.log("Videó mérete: " + video.videoWidth + "x" + video.videoHeight);
             scanQRCode(video, canvas, ctx);
           };
         })
@@ -462,10 +459,7 @@
 
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      console.log("Képkocka feldolgozása: " + canvas.width + "x" + canvas.height);
-      const code = jsQR(imageData.data, imageData.width, imageData.height, {
-        inversionAttempts: "dontInvert"
-      });
+      const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
 
       if (code) {
         console.log("QR kód megtalálva:", code.data);
@@ -473,7 +467,6 @@
         processFoglalas(code.data);
         stopQRReader();
       } else {
-        console.log("Nincs QR kód a képen");
         document.getElementById("qr-reader-result").textContent = "QR kód keresése...";
         requestAnimationFrame(() => scanQRCode(video, canvas, ctx));
       }
@@ -508,8 +501,9 @@
       }
     }
 
-    // Foglalások tárolása és listázása dátummal
+    // Foglalások kezelése
     let foglalasok = JSON.parse(localStorage.getItem('foglalasok')) || [];
+
     function saveFoglalas(cimkeInput) {
       const parts = cimkeInput.split(" ");
       const anyagszam = parts[0] || "";
@@ -548,8 +542,6 @@
           document.getElementById("qr-reader-error").textContent = "Hiba: Érvénytelen QR kód formátum!";
           return;
         }
-        const anyagszam = parts[0];
-        const megnevezes = parts.slice(1).join(" ");
         const selectedMachine = document.getElementById("select-machine").value;
         const selectedTerulet = document.getElementById("select-terulet").value;
         const kivetBevetel = document.getElementById("kivet-bevetel").value;
@@ -573,28 +565,26 @@
       if (foglalasok.length > 0) {
         tbody.innerHTML = foglalasok.map((item, index) => `
           <tr>
-            <td style="padding: 5px; border: 1px solid #ccc;">${item.sorszam}</td>
-            <td style="padding: 5px; border: 1px solid #ccc;">${item.anyagszam}</td>
-            <td style="padding: 5px; border: 1px solid #ccc;">${item.megnevezes}</td>
-            <td style="padding: 5px; border: 1px solid #ccc;">${item.terulet}</td>
-            <td style="padding: 5px; border: 1px solid #ccc;">${item.gepNev}</td>
-            <td style="padding: 5px; border: 1px solid #ccc;">${item.belsoMegrendelesiSzam}</td>
-            <td style="padding: 5px; border: 1px solid #ccc;">${item.kivetBevetel}</td>
-            <td style="padding: 5px; border: 1px solid #ccc;">${item.raktar}</td>
-            <td style="padding: 5px; border: 1px solid #ccc;">${item.darabszam}</td>
-            <td style="padding: 5px; border: 1px solid #ccc;">${item.qrKod}</td>
-            <td style="padding: 5px; border: 1px solid #ccc;">${item.datum}</td>
-            <td style="padding: 5px; border: 1px solid #ccc;">
-              <button onclick="showDeletePopup(${index}, false)" style="background-color: #FF0000; color: white; width: 30px; height: 30px; border: none; border-radius: 5px;">T</button>
-            </td>
+            <td>${item.sorszam}</td>
+            <td>${item.anyagszam}</td>
+            <td>${item.megnevezes}</td>
+            <td>${item.terulet}</td>
+            <td>${item.gepNev}</td>
+            <td>${item.belsoMegrendelesiSzam}</td>
+            <td>${item.kivetBevetel}</td>
+            <td>${item.raktar}</td>
+            <td>${item.darabszam}</td>
+            <td>${item.qrKod}</td>
+            <td>${item.datum}</td>
+            <td><button onclick="showDeletePopup(${index}, false)" style="background-color: #FF0000; color: white; width: 30px; height: 30px; border: none; border-radius: 5px;">T</button></td>
           </tr>
         `).join("");
       } else {
-        tbody.innerHTML = "<tr><td colspan='12' style='padding: 10px; border: 1px solid #ccc;'>Nincs foglalás.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='12'>Nincs foglalás.</td></tr>";
       }
     }
 
-    // Törlési popup logika
+    // Törlés logika
     let deleteIndex = null;
     let isAllDelete = false;
 
@@ -617,11 +607,8 @@
     function showConfirmDelete() {
       let message = isAllDelete ? "Biztosan törölni szeretnéd az összes rekordot?" : `Biztosan törölni szeretnéd a ${deleteIndex + 1}. rekordot?`;
       if (confirm(message)) {
-        if (isAllDelete) {
-          foglalasok = [];
-        } else {
-          foglalasok.splice(deleteIndex, 1);
-        }
+        if (isAllDelete) foglalasok = [];
+        else foglalasok.splice(deleteIndex, 1);
         localStorage.setItem('foglalasok', JSON.stringify(foglalasok));
         updateFoglalasLista();
         alert("A rekordok törölve");
@@ -632,45 +619,12 @@
       document.getElementById("delete-password-error").textContent = "";
     }
 
-    // Gépek tárolása és kezelése
+    // Beállítások és gépek kezelése
     let gepek = JSON.parse(localStorage.getItem('gepek')) || {
-      "MFC-terület": [
-        "DMG 1", "DMG 2", "DMG 3", "DMG 4", "DMG 5", "DMG 6", "DMG CTX", "Behringer 1", "Behringer 2", "Behringer 3",
-        "Behringer 4", "Behringer 5", "Forgácsprés 1", "Forgácsprés 2", "G-mill 1", "G-mill 2", "G-mill 3", "G-mill 4",
-        "G-mill 5", "G-mill 6", "G-mill 7", "G-mill 8", "G-mill 9", "G-mill 10", "G-mill 11", "G-mill 12", "G-mill 13",
-        "G-mill 14", "G-mill 15", "G-mill 16", "G-mill 17", "G-mill 18", "G-mill 19", "G-mill 20", "G-mill 21", "G-mill 22",
-        "Heller 1", "Heller 2", "Heller 3", "Heller 4", "Heller 5", "Kaltenbach 1", "Központfúró 1", "Központfúró 2",
-        "Központfúró 3", "MCU 1", "HEC 1", "HEC 2", "LX 1", "LX 2", "LX 3", "LX 4", "LX 5", "LX 6", "LX 7", "LX 8",
-        "LX 9", "LX 10", "LX 11", "LX 12", "LX 13", "LX 14", "LX 15", "SX 1", "SX 2", "SX 3", "SX 4", "SX 5", "SX 6",
-        "SX 7", "SX 8", "SX 9", "SX 10", "SX 11", "SX 12", "SX 13", "SX 14", "SX 15", "SX 16", "TM 13", "TM 14", "TM 15",
-        "TM 16", "TM 17", "TM 18", "TM 19", "TM 20", "TM 21", "TM 22", "TMg 1", "TMg 2", "TMg 3", "TMg 4", "TMg 5",
-        "TMg 6", "TMg 7", "TMg 8", "TMg 9", "TMg 10", "TMg 11", "TMg 12", "TMg 13", "TMg 14", "TMg 15", "TMg 16",
-        "TMg 17", "TMg 18", "TMg 19", "TMg 20", "TMg 21", "TMg 22", "Szalagvágó 1", "Szalagvágó 2", "Koptató 1",
-        "Koptató 2", "Stahl", "Ferrari 1", "BW 1", "BW 2"
-      ],
+      "MFC-terület": ["DMG 1", "DMG 2", "DMG 3", "DMG 4", "DMG 5", "DMG 6", "DMG CTX", "Behringer 1", "Behringer 2", "Behringer 3", "Behringer 4", "Behringer 5", "Forgácsprés 1", "Forgácsprés 2", "G-mill 1", "G-mill 2", "G-mill 3", "G-mill 4", "G-mill 5", "G-mill 6", "G-mill 7", "G-mill 8", "G-mill 9", "G-mill 10", "G-mill 11", "G-mill 12", "G-mill 13", "G-mill 14", "G-mill 15", "G-mill 16", "G-mill 17", "G-mill 18", "G-mill 19", "G-mill 20", "G-mill 21", "G-mill 22", "Heller 1", "Heller 2", "Heller 3", "Heller 4", "Heller 5", "Kaltenbach 1", "Központfúró 1", "Központfúró 2", "Központfúró 3", "MCU 1", "HEC 1", "HEC 2", "LX 1", "LX 2", "LX 3", "LX 4", "LX 5", "LX 6", "LX 7", "LX 8", "LX 9", "LX 10", "LX 11", "LX 12", "LX 13", "LX 14", "LX 15", "SX 1", "SX 2", "SX 3", "SX 4", "SX 5", "SX 6", "SX 7", "SX 8", "SX 9", "SX 10", "SX 11", "SX 12", "SX 13", "SX 14", "SX 15", "SX 16", "TM 13", "TM 14", "TM 15", "TM 16", "TM 17", "TM 18", "TM 19", "TM 20", "TM 21", "TM 22", "TMg 1", "TMg 2", "TMg 3", "TMg 4", "TMg 5", "TMg 6", "TMg 7", "TMg 8", "TMg 9", "TMg 10", "TMg 11", "TMg 12", "TMg 13", "TMg 14", "TMg 15", "TMg 16", "TMg 17", "TMg 18", "TMg 19", "TMg 20", "TMg 21", "TMg 22", "Szalagvágó 1", "Szalagvágó 2", "Koptató 1", "Koptató 2", "Stahl", "Ferrari 1", "BW 1", "BW 2"],
       "MFS-terület": ["Union 1", "Acra 1", "Kikinda 1", "Schiess Froriep 1", "Schiess Wotan", "TOS 1"],
-      "MFH-terület": [
-        "Blohm 30/299", "Blohm 30/300", "Blohm 30/335", "Mägerle Tandem 30/336", "Mägerle 29/51", "Mägerle 29/52",
-        "Mägerle 30/320", "Mägerle 30/321", "Mägerle 30/323", "Mägerle 30/341", "Mägerle 30/348", "Mägerle 30/351",
-        "Mägerle 30/352", "Heller 10/41", "Heller 10/45", "Heller 10/48", "Heller 10/49", "Heller 10/50", "Heller 10/51",
-        "Hermle 10/52", "Hüller Hille 10/54", "TMg 10/55", "TMg 10/56", "Senk-EDM Elotherm 75/25", "Senk-EDM Elotherm 75/26",
-        "Senk-EDM Elotherm 75/27", "Senk-EDM Elotherm 75/28", "EDM Ingersoll 75/45", "EDM Ingersoll 75/46", "EDM Ingersoll 75/47",
-        "EDM Ingersoll 75/48", "EDM Ingersoll 75/49", "EDM Ingersoll 75/50", "EDM Ingersoll 75/51", "EDM Ingersoll 75/52",
-        "EDM Ingersoll 75/53", "Draht-EDM Agie 75/39", "Draht-EDM Agie 75/40", "Drahterodieren Robofil 440cc", "Brown&Sharp 30/300",
-        "Brown&Sharp 30/317", "H60", "ELB 30/290", "ELB 30/291"
-      ],
-      "M2B-terület": [
-        "Böhringer DUS 001/175", "DMG DMU 014/105", "DMG DMU 014/106", "DMG DMU014/112", "DMG DMU 14/116", "DMG NEF 001/158",
-        "DMG NEF 005/035", "Böhringer VDF 003/042", "DMG MF 003/043", "DMG CTX 003/045", "DMG CTX 005/031", "DMG CTX 005/037",
-        "DMG CTX 005/038", "WFL Millturn 005/028", "DMG TWIN 65 005/029", "DMG DMC 014/104", "DMG GMX 005/036", "AXA 002/031",
-        "Matthes 086/098", "Teijo Viverk 086/102", "Polysoude 046/009", "Polysoude 046/010", "Polysoude 046/011",
-        "Polysoude 046/046", "Polysoude 046/794", "Polysoude 046/945", "Fronius 046/035", "Fronius 046/101",
-        "Alzmetall 006/143", "Alzmetall 006/134", "Alzmetall 014/107", "Alzmetall 014/108", "Alzmetall 014/109",
-        "Alzmetall 014/110", "NABERTHERM 082/094", "SCHELD 071/066", "AUER 070/057", "Orbitalum 046/980",
-        "Orbitalum 046/102", "Ehrler Prüftechnik 075/082", "Ehrler Prüftechnik 091/100", "Ehrler Prüftechnik 091/101",
-        "INDEX-Werke 005/033", "INDEX-Werke 005/034", "OPS Ingersoll 075/051", "OPS Ingersoll 075/052", "OPS Ingersoll 075/073",
-        "INDEX-Werke 14/115", "Polysoude 46/100", "INDEX-Werke 80/135", "HEMO 86/120", "Mitutoyo 90/", "DMG Haimer"
-      ]
+      "MFH-terület": ["Blohm 30/299", "Blohm 30/300", "Blohm 30/335", "Mägerle Tandem 30/336", "Mägerle 29/51", "Mägerle 29/52", "Mägerle 30/320", "Mägerle 30/321", "Mägerle 30/323", "Mägerle 30/341", "Mägerle 30/348", "Mägerle 30/351", "Mägerle 30/352", "Heller 10/41", "Heller 10/45", "Heller 10/48", "Heller 10/49", "Heller 10/50", "Heller 10/51", "Hermle 10/52", "Hüller Hille 10/54", "TMg 10/55", "TMg 10/56", "Senk-EDM Elotherm 75/25", "Senk-EDM Elotherm 75/26", "Senk-EDM Elotherm 75/27", "Senk-EDM Elotherm 75/28", "EDM Ingersoll 75/45", "EDM Ingersoll 75/46", "EDM Ingersoll 75/47", "EDM Ingersoll 75/48", "EDM Ingersoll 75/49", "EDM Ingersoll 75/50", "EDM Ingersoll 75/51", "EDM Ingersoll 75/52", "EDM Ingersoll 75/53", "Draht-EDM Agie 75/39", "Draht-EDM Agie 75/40", "Drahterodieren Robofil 440cc", "Brown&Sharp 30/300", "Brown&Sharp 30/317", "H60", "ELB 30/290", "ELB 30/291"],
+      "M2B-terület": ["Böhringer DUS 001/175", "DMG DMU 014/105", "DMG DMU 014/106", "DMG DMU014/112", "DMG DMU 14/116", "DMG NEF 001/158", "DMG NEF 005/035", "Böhringer VDF 003/042", "DMG MF 003/043", "DMG CTX 003/045", "DMG CTX 005/031", "DMG CTX 005/037", "DMG CTX 005/038", "WFL Millturn 005/028", "DMG TWIN 65 005/029", "DMG DMC 014/104", "DMG GMX 005/036", "AXA 002/031", "Matthes 086/098", "Teijo Viverk 086/102", "Polysoude 046/009", "Polysoude 046/010", "Polysoude 046/011", "Polysoude 046/046", "Polysoude 046/794", "Polysoude 046/945", "Fronius 046/035", "Fronius 046/101", "Alzmetall 006/143", "Alzmetall 006/134", "Alzmetall 014/107", "Alzmetall 014/108", "Alzmetall 014/109", "Alzmetall 014/110", "NABERTHERM 082/094", "SCHELD 071/066", "AUER 070/057", "Orbitalum 046/980", "Orbitalum 046/102", "Ehrler Prüftechnik 075/082", "Ehrler Prüftechnik 091/100", "Ehrler Prüftechnik 091/101", "INDEX-Werke 005/033", "INDEX-Werke 005/034", "OPS Ingersoll 075/051", "OPS Ingersoll 075/052", "OPS Ingersoll 075/073", "INDEX-Werke 14/115", "Polysoude 46/100", "INDEX-Werke 80/135", "HEMO 86/120", "Mitutoyo 90/", "DMG Haimer"]
     };
     let gepekAdatok = JSON.parse(localStorage.getItem('gepekAdatok')) || {
       "DMG 1": { belsoMegrendelesiSzam: "U00980000101", koltseghely: "15009126" },
@@ -837,4 +791,33 @@
       "Draht-EDM Agie 75/39": { belsoMegrendelesiSzam: "U941075_39", koltseghely: "15009450" },
       "Draht-EDM Agie 75/40": { belsoMegrendelesiSzam: "U941075_40", koltseghely: "15009450" },
       "Drahterodieren Robofil 440cc": { belsoMegrendelesiSzam: "U9410931103", koltseghely: "15009450" },
-      "Brown&Sharp 30/300": { belsoMegrendelesiSzam: "U942030_300", kolt
+      "Brown&Sharp 30/300": { belsoMegrendelesiSzam: "U942030_300", koltseghely: "15009450" },
+      "Brown&Sharp 30/317": { belsoMegrendelesiSzam: "U942030_317", koltseghely: "15009450" },
+      "H60": { belsoMegrendelesiSzam: "U942030_318", koltseghely: "15009450" },
+      "ELB 30/290": { belsoMegrendelesiSzam: "U942030_290", koltseghely: "15009450" },
+      "ELB 30/291": { belsoMegrendelesiSzam: "U942030_291", koltseghely: "15009450" },
+      "Böhringer DUS 001/175": { belsoMegrendelesiSzam: "U943001_175", koltseghely: "15009200" },
+      "DMG DMU 014/105": { belsoMegrendelesiSzam: "U943014_105", koltseghely: "15009200" },
+      "DMG DMU 014/106": { belsoMegrendelesiSzam: "U943014_106", koltseghely: "15009200" },
+      "DMG DMU014/112": { belsoMegrendelesiSzam: "U943014_112", koltseghely: "15009200" },
+      "DMG DMU 14/116": { belsoMegrendelesiSzam: "U943014_116", koltseghely: "15009200" },
+      "DMG NEF 001/158": { belsoMegrendelesiSzam: "U943001_158", koltseghely: "15009200" },
+      "DMG NEF 005/035": { belsoMegrendelesiSzam: "U943005_035", koltseghely: "15009200" },
+      "Böhringer VDF 003/042": { belsoMegrendelesiSzam: "U943003_042", koltseghely: "15009200" },
+      "DMG MF 003/043": { belsoMegrendelesiSzam: "U943003_043", koltseghely: "15009200" },
+      "DMG CTX 003/045": { belsoMegrendelesiSzam: "U943003_045", koltseghely: "15009200" },
+      "DMG CTX 005/031": { belsoMegrendelesiSzam: "U943005_031", koltseghely: "15009200" },
+      "DMG CTX 005/037": { belsoMegrendelesiSzam: "U943005_037", koltseghely: "15009200" },
+      "DMG CTX 005/038": { belsoMegrendelesiSzam: "U943005_038", koltseghely: "15009200" },
+      "WFL Millturn 005/028": { belsoMegrendelesiSzam: "U943005_028", koltseghely: "15009200" },
+      "DMG TWIN 65 005/029": { belsoMegrendelesiSzam: "U943005_029", koltseghely: "15009200" },
+      "DMG DMC 014/104": { belsoMegrendelesiSzam: "U943014_104", koltseghely: "15009200" },
+      "DMG GMX 005/036": { belsoMegrendelesiSzam: "U943005_036", koltseghely: "15009200" },
+      "AXA 002/031": { belsoMegrendelesiSzam: "U943002_031", koltseghely: "15009200" },
+      "Matthes 086/098": { belsoMegrendelesiSzam: "U943086_098", koltseghely: "15009200" },
+      "Teijo Viverk 086/102": { belsoMegrendelesiSzam: "U943086_102", koltseghely: "15009200" },
+      "Polysoude 046/009": { belsoMegrendelesiSzam: "U943046_009", koltseghely: "15009200" },
+      "Polysoude 046/010": { belsoMegrendelesiSzam: "U943046_010", koltseghely: "15009200" },
+      "Polysoude 046/011": { belsoMegrendelesiSzam: "U943046_011", koltseghely: "15009200" },
+      "Polysoude 046/046": { belsoMegrendelesiSzam: "U943046_046", koltseghely: "15009200" },
+      "Polysoude 046/794": { belsoMegrendelesiSzam: "U943046_794", koltseghely
