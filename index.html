@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Adatbázis Címkekezelő</title>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script> <!-- QR generálás -->
-  <script src="js/jsQR.min.js"></script> <!-- QR olvasás -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script> <!-- QR generálás könyvtár -->
+  <script src="js/jsQR.min.js"></script> <!-- QR olvasás könyvtár -->
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -69,19 +69,31 @@
       display: block;
       margin: 10px 0;
     }
-    #error-message {
-      color: red;
-      text-align: center;
-      margin-top: 10px;
-    }
   </style>
 </head>
 <body>
   <h1>AI Adatbázis Címkekezelő</h1>
-  <div id="error-message"></div>
+  
+  <div class="version-info">
+    <p>Verzió: <span id="version-number">2.3.12</span></p>
+    <button onclick="showVersionHistory()">Verzió Történet</button>
+  </div>
+  <div id="version-history-popup">
+    <h3>Verzió Történet</h3>
+    <ul>
+      <li><strong>2.3.12</strong> – Hibakeresés hozzáadva a QR generáláshoz és gép kiválasztáshoz; QR generálás javítása.</li>
+      <li><strong>2.3.11</strong> – Javítva a gépek adatainak betöltése a Beállítások lapon; hozzáadva admin jelszavas védelem a Beállítások laphoz; mock-data.json integráció.</li>
+      <li><strong>2.3.10</strong> – Javítva a belső rendelési számok és költséghelyek megjelenítése a Foglalási Lista és Beállítások lapon.</li>
+    </ul>
+    <button onclick="closeVersionHistory()">Bezárás</button>
+  </div>
+
   <nav>
     <span class="nav-link" onclick="showLap(1)">QR Kód Generálás</span>
     <span class="nav-link" onclick="showLap(2)">QR Kód Olvasás (Foglalás)</span>
+    <span class="nav-link" onclick="showLap(3)">Foglalási Lista</span>
+    <span class="nav-link" onclick="showLap(4)">Segítség</span>
+    <span class="nav-link" onclick="showSettings()">Beállítások</span>
   </nav>
 
   <div id="lap1" class="lap-content active">
@@ -99,6 +111,42 @@
     <button onclick="startQRReader()">Kamera Indítása</button>
     <video id="qr-video" style="width: 100%; max-width: 500px;"></video>
     <p><strong>Eredmény:</strong> <span id="qr-result">Nincs beolvasva QR kód</span></p>
+    <button onclick="saveFoglalas()" style="display: none;" id="save-foglalas-btn">Foglalás Mentése</button>
+  </div>
+
+  <div id="lap3" class="lap-content">
+    <h2>Foglalási Lista</h2>
+    <ul id="foglalas-lista"></ul>
+  </div>
+
+  <div id="lap4" class="lap-content">
+    <h2>Segítség</h2>
+    <p>Használati útmutató: Használja a QR kód generálást új címkék készítéséhez, vagy olvassa be a meglévő címkéket foglaláshoz.</p>
+  </div>
+
+  <div id="lap5" class="lap-content" style="display: none;">
+    <h2>Beállítások</h2>
+    <button id="add-machine-btn">Új gép hozzáadása</button>
+    <table>
+      <thead>
+        <tr>
+          <th>Terület</th>
+          <th>Gép neve</th>
+          <th>Rendelési szám</th>
+          <th>Költséghely szám</th>
+          <th>Művelet</th>
+        </tr>
+      </thead>
+      <tbody id="machine-body"></tbody>
+    </table>
+  </div>
+
+  <div id="settings-password-popup">
+    <h3>Beállítások jelszavának megadása</h3>
+    <input type="password" id="settings-password" placeholder="Jelszó">
+    <button onclick="checkSettingsPassword()">Belépés</button>
+    <button onclick="closeSettingsPopup()">Mégse</button>
+    <p id="settings-password-error" style="color: red;"></p>
   </div>
 
   <script>
@@ -112,44 +160,64 @@
       if (lap === 2) updateMachineDropdown();
     }
 
+    // Beállítások lap jelszavas védelme
+    function showSettings() {
+      document.getElementById("settings-password-popup").style.display = "block";
+    }
+
+    function checkSettingsPassword() {
+      const password = document.getElementById("settings-password").value;
+      if (password === "admin") {
+        document.getElementById("settings-password-popup").style.display = "none";
+        document.getElementById("lap5").style.display = "block";
+        updateMachineTable();
+      } else {
+        document.getElementById("settings-password-error").textContent = "Helytelen jelszó!";
+      }
+      document.getElementById("settings-password").value = "";
+    }
+
+    function closeSettingsPopup() {
+      document.getElementById("settings-password-popup").style.display = "none";
+      document.getElementById("settings-password").value = "";
+      document.getElementById("settings-password-error").textContent = "";
+    }
+
+    // Verziótörténet megjelenítése és bezárása
+    function showVersionHistory() {
+      document.getElementById("version-history-popup").style.display = "block";
+    }
+    function closeVersionHistory() {
+      document.getElementById("version-history-popup").style.display = "none";
+    }
+
     // QR kód generálás
     function generateQRCode() {
       const input = document.getElementById("qr-input");
       const qrcodeDiv = document.getElementById("qrcode");
-      const errorMessage = document.getElementById("error-message");
-      if (!input || !qrcodeDiv || !errorMessage) {
-        console.error("Hiba: qr-input, qrcode vagy error-message elem nem található!");
-        errorMessage.textContent = "Hiba: Az oldal elemei nem találhatók!";
+      if (!input || !qrcodeDiv) {
+        console.error("Hiba: qr-input vagy qrcode elem nem található!");
         return;
       }
       if (typeof QRCode === "undefined") {
         console.error("Hiba: QRCode könyvtár nem töltött be!");
-        errorMessage.textContent = "Hiba: A QRCode könyvtár nem töltött be. Ellenőrizd az internetkapcsolatodat.";
         return;
       }
-      const text = input.value.trim();
+      const text = input.value;
       if (!text) {
         console.error("Hiba: Üres bemenet a QR kód generáláshoz!");
-        errorMessage.textContent = "Hiba: Kérlek, adj meg egy szöveget a QR kódhoz!";
         return;
       }
-      errorMessage.textContent = "";
       qrcodeDiv.innerHTML = "";
       console.log("QR kód generálása a következő szöveggel:", text);
-      try {
-        new QRCode(qrcodeDiv, {
-          text: text,
-          width: 128,
-          height: 128,
-          colorDark: "#000000",
-          colorLight: "#ffffff",
-          correctLevel: QRCode.CorrectLevel.H
-        });
-        console.log("QR kód sikeresen generálva!");
-      } catch (err) {
-        console.error("Hiba a QR kód generálása során:", err);
-        errorMessage.textContent = "Hiba a QR kód generálása során: " + err.message;
-      }
+      new QRCode(qrcodeDiv, {
+        text: text,
+        width: 128,
+        height: 128,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+      });
     }
 
     // QR kód olvasás
@@ -157,16 +225,13 @@
     async function startQRReader() {
       const video = document.getElementById("qr-video");
       const result = document.getElementById("qr-result");
-      const errorMessage = document.getElementById("error-message");
       try {
         stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
         video.srcObject = stream;
         video.play();
         requestAnimationFrame(tick);
       } catch (err) {
-        console.error("Hiba a kamera indításakor:", err);
-        errorMessage.textContent = "Hiba a kamera indításakor: " + err.message;
-        result.textContent = "Kamera nem elérhető (GitHub Pages-en nem működik).";
+        result.textContent = "Hiba a kamera indításakor: " + err.message;
       }
     }
 
@@ -183,9 +248,38 @@
         const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
         if (code) {
           result.textContent = code.data;
+          document.getElementById("save-foglalas-btn").style.display = "block";
         }
       }
       if (stream) requestAnimationFrame(tick);
+    }
+
+    function saveFoglalas() {
+      const select = document.getElementById("machine-select");
+      const result = document.getElementById("qr-result").textContent;
+      const gep = select.value;
+      if (gep && result !== "Nincs beolvasva QR kód") {
+        const foglalas = { gep, kod: result, datum: new Date().toLocaleString() };
+        let foglalasok = JSON.parse(localStorage.getItem("foglalasok") || "[]");
+        foglalasok.push(foglalas);
+        localStorage.setItem("foglalasok", JSON.stringify(foglalasok));
+        updateFoglalasLista();
+        document.getElementById("save-foglalas-btn").style.display = "none";
+        result.textContent = "Nincs beolvasva QR kód";
+      } else {
+        alert("Válassz gépet, és olvass be egy QR kódot!");
+      }
+    }
+
+    function updateFoglalasLista() {
+      const lista = document.getElementById("foglalas-lista");
+      let foglalasok = JSON.parse(localStorage.getItem("foglalasok") || "[]");
+      lista.innerHTML = "";
+      foglalasok.forEach(f => {
+        const li = document.createElement("li");
+        li.textContent = `${f.gep} - ${f.kod} (${f.datum})`;
+        lista.appendChild(li);
+      });
     }
 
     // Gépek JSON-ból történő betöltése
@@ -195,11 +289,9 @@
         if (!response.ok) throw new Error('Hiba a JSON betöltésekor: ' + response.status);
         const gepek = await response.json();
         localStorage.setItem('gepek', JSON.stringify(gepek));
-        console.log("Gépek sikeresen betöltve:", gepek);
         return gepek;
       } catch (error) {
         console.error('Hiba a mock-data.json betöltésekor:', error);
-        document.getElementById("error-message").textContent = "Hiba a gépek betöltésekor: " + error.message;
         return {
           "MFC-terület": [],
           "MFS-terület": [],
@@ -215,17 +307,74 @@
       console.log("Gépek betöltése JSON-ból...");
       loadGepek().then(data => {
         gepek = data;
+        console.log("Betöltött gépek:", gepek);
+        localStorage.setItem('gepek', JSON.stringify(gepek));
+        if (document.getElementById("lap5").style.display === "block") updateMachineTable();
         if (document.getElementById("lap2").classList.contains("active")) updateMachineDropdown();
       });
     }
 
+    // Gépek táblázat frissítése
+    function updateMachineTable() {
+      const tbody = document.getElementById("machine-body");
+      if (!tbody) {
+        console.error("Hiba: machine-body elem nem található!");
+        return;
+      }
+      tbody.innerHTML = "";
+      for (let terulet in gepek) {
+        if (gepek[terulet] && Array.isArray(gepek[terulet])) {
+          gepek[terulet].forEach(gep => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+              <td>${terulet}</td>
+              <td>${gep.nev || 'N/A'}</td>
+              <td>${gep.rendelesiSzam || 'N/A'}</td>
+              <td>${gep.koltseghelySzam || 'N/A'}</td>
+              <td><button onclick="deleteMachine('${terulet}', '${gep.nev}')" style="background-color: #FF0000; color: white; width: 30px; height: 30px; border: none; border-radius: 5px;">T</button></td>
+            `;
+            tbody.appendChild(row);
+          });
+        }
+      }
+      localStorage.setItem('gepek', JSON.stringify(gepek));
+    }
+
+    function deleteMachine(terulet, nev) {
+      if (confirm(`Biztosan törlöd a(z) ${nev} gépet a(z) ${terulet} területről?`)) {
+        gepek[terulet] = gepek[terulet].filter(g => g.nev !== nev);
+        if (gepek[terulet].length === 0) delete gepek[terulet];
+        localStorage.setItem('gepek', JSON.stringify(gepek));
+        updateMachineTable();
+        updateMachineDropdown();
+      }
+    }
+
+    function addMachine() {
+      const terulet = prompt("Add meg a területet (pl. MFC-terület):");
+      const nev = prompt("Add meg a gép nevét:");
+      const rendelesiSzam = prompt("Add meg a belső rendelési számot (üresen hagyható):") || "";
+      const koltseghelySzam = prompt("Add meg a költséghely számot:") || (terulet === "M2B-terület" ? "15009131" : "15009126");
+      if (terulet && nev) {
+        if (!gepek[terulet]) gepek[terulet] = [];
+        if (!gepek[terulet].some(g => g.nev === nev)) {
+          gepek[terulet].push({ nev, rendelesiSzam, koltseghelySzam });
+          localStorage.setItem('gepek', JSON.stringify(gepek));
+          updateMachineTable();
+          updateMachineDropdown();
+        } else {
+          alert("Ez a gép már létezik ezen a területen!");
+        }
+      }
+    }
+
+    document.getElementById("add-machine-btn").addEventListener("click", addMachine);
+
     // Gépek legördülő menü frissítése
     function updateMachineDropdown() {
       const select = document.getElementById("machine-select");
-      const errorMessage = document.getElementById("error-message");
       if (!select) {
-        console.error("Hiba: machine-select elem nem található!");
-        errorMessage.textContent = "Hiba: A gép kiválasztó elem nem található!";
+        console.error("A machine-select elem nem található!");
         return;
       }
       console.log("Legördülő menü frissítése... Gépek:", gepek);
@@ -238,11 +387,14 @@
             option.text = `${terulet} - ${gep.nev}`;
             select.appendChild(option);
           });
-        } else {
-          console.warn("Nincs adat a", terulet, "területhez!");
         }
       }
     }
+
+    // Lista inicializálása betöltéskor
+    window.onload = async function() {
+      updateFoglalasLista();
+    };
   </script>
 </body>
 </html>
