@@ -168,12 +168,13 @@
   <h1>AI Adatbázis Címkekezelő</h1>
   
   <div class="version-info">
-    <p>Verzió: <span id="version-number">2.3.10</span></p>
+    <p>Verzió: <span id="version-number">2.3.11</span></p>
     <button onclick="showVersionHistory()">Verzió Történet</button>
   </div>
   <div id="version-history-popup">
     <h3>Verzió Történet</h3>
     <ul>
+      <li><strong>2.3.11</strong> – Javítva a gépek adatainak betöltése a Beállítások lapon; hozzáadva admin jelszavas védelem a Beállítások laphoz.</li>
       <li><strong>2.3.10</strong> – Javítva a belső rendelési számok és költséghelyek megjelenítése a Foglalási Lista és Beállítások lapon; biztosítva a helyes localStorage inicializálás.</li>
       <li><strong>2.3.9</strong> – Az M2B-terület gépeinek költséghely száma egységesen 15009131-re frissítve.</li>
       <li><strong>2.3.8</strong> – Hozzáadva a 2.5.1-es funkciók (kivét/bevétel kódok, raktárak, darabszám bevitel, sorszámos foglalási lap), M2B gépek belső rendelési szám nélkül.</li>
@@ -199,7 +200,7 @@
     <span class="nav-link" onclick="showLap(2)">QR Kód Olvasás (Foglalás)</span>
     <span class="nav-link" onclick="showLap(3)">Foglalási Lista</span>
     <span class="nav-link" onclick="showLap(4)">Segítség</span>
-    <span class="nav-link" onclick="showLap(5)">Beállítások</span>
+    <span class="nav-link" onclick="showSettings()">Beállítások</span>
   </nav>
 
   <div id="lap1" class="lap-content active">
@@ -306,12 +307,19 @@
       <li><b>QR Kód Generálás:</b> Kódot generál az anyagszám és leírás alapján.</li>
       <li><b>QR Kód Olvasás (Foglalás):</b> A telefon kamerájával olvassa be a QR kódot, és rögzíti a foglalást terület, gép, kivét/bevétel, raktár és darabszámmal.</li>
       <li><b>Foglalási Lista:</b> Megjeleníti a foglalások listáját sorszámmal, dátummal, anyagszámmal, alkatrésznévvel stb.</li>
-      <li><b>Beállítások:</b> Gépek kezelésére szolgál (felvétel, törlés, szerkesztés).</li>
+      <li><b>Beállítások:</b> Gépek kezelésére szolgál (felvétel, törlés, szerkesztés), admin jelszóval védett.</li>
     </ul>
   </div>
 
-  <div id="lap5" class="lap-content">
+  <div id="lap5" class="lap-content" style="display: none;">
     <h2>Beállítások</h2>
+    <div id="settings-password-popup" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #fff; padding: 20px; border: 1px solid #ccc; max-width: 300px; text-align: center;">
+      <h3>Kérlek, add meg az admin jelszót!</h3>
+      <input type="password" id="settings-password" style="padding: 5px; width: 200px; margin-bottom: 10px;">
+      <div id="settings-password-error" style="color: red; font-size: 12px; margin-top: 5px;"></div>
+      <button onclick="checkSettingsPassword()" style="background-color: #007BFF; color: white; padding: 10px; border: none; border-radius: 5px;">OK</button>
+      <button onclick="closeSettingsPopup()" style="background-color: #ccc; color: black; padding: 10px; border: none; border-radius: 5px; margin-left: 10px;">Mégse</button>
+    </div>
     <button id="add-machine-btn" style="background-color: #007BFF; color: white; padding: 10px 15px; border: none; border-radius: 5px;">Új gép hozzáadása</button>
     <div id="settings-table">
       <table>
@@ -346,7 +354,29 @@
       });
       document.getElementById('lap' + lap).classList.add('active');
       if (lap === 2) updateMachineDropdown();
-      if (lap === 5) updateMachineTable();
+    }
+
+    // Beállítások lap jelszavas védelme
+    function showSettings() {
+      document.getElementById("settings-password-popup").style.display = "block";
+    }
+
+    function checkSettingsPassword() {
+      const password = document.getElementById("settings-password").value;
+      if (password === "admin") {
+        document.getElementById("settings-password-popup").style.display = "none";
+        document.getElementById("lap5").style.display = "block";
+        updateMachineTable();
+      } else {
+        document.getElementById("settings-password-error").textContent = "Helytelen jelszó!";
+      }
+      document.getElementById("settings-password").value = "";
+    }
+
+    function closeSettingsPopup() {
+      document.getElementById("settings-password-popup").style.display = "none";
+      document.getElementById("settings-password").value = "";
+      document.getElementById("settings-password-error").textContent = "";
     }
 
     // Verziótörténet megjelenítése és bezárása
@@ -848,8 +878,8 @@
 
     // Inicializálás: Ha a localStorage üres, a defaultGepLista-t használjuk
     let gepek = JSON.parse(localStorage.getItem('gepek'));
-    if (!gepek || Object.keys(gepek).length === 0) {
-      gepek = defaultGepLista;
+    if (!gepek || Object.keys(gepek).length === 0 || !gepek["MFC-terület"] || !gepek["MFS-terület"] || !gepek["MFH-terület"] || !gepek["M2B-terület"]) {
+      gepek = JSON.parse(JSON.stringify(defaultGepLista)); // Mély másolás
       localStorage.setItem('gepek', JSON.stringify(gepek));
     }
 
@@ -862,7 +892,7 @@
             const row = document.createElement("tr");
             row.innerHTML = `
               <td>${terulet}</td>
-              <td>${gep.nev}</td>
+              <td>${gep.nev || 'N/A'}</td>
               <td>${gep.rendelesiSzam || 'N/A'}</td>
               <td>${gep.koltseghelySzam || 'N/A'}</td>
               <td><button onclick="deleteMachine('${terulet}', '${gep.nev}')" style="background-color: #FF0000; color: white; width: 30px; height: 30px; border: none; border-radius: 5px;">T</button></td>
@@ -876,7 +906,7 @@
 
     function deleteMachine(terulet, nev) {
       if (confirm(`Biztosan törlöd a(z) ${nev} gépet a(z) ${terulet} területről?`)) {
-        gepek[terulet] = gepek[terulet].filter(gep => gep.nev !== nev);
+        gepek[terulet] = gepek[terulet].filter(g => g.nev !== nev);
         if (gepek[terulet].length === 0) delete gepek[terulet];
         localStorage.setItem('gepek', JSON.stringify(gepek));
         updateMachineTable();
@@ -888,7 +918,7 @@
       const terulet = prompt("Add meg a területet (pl. MFC-terület):");
       const nev = prompt("Add meg a gép nevét:");
       const rendelesiSzam = prompt("Add meg a belső rendelési számot (üresen hagyható):") || "";
-      const koltseghelySzam = prompt("Add meg a költséghely számot:") || (terulet === "M2B-terület" ? "15009131" : "15009126"); // Alapértelmezett érték területtől függően
+      const koltseghelySzam = prompt("Add meg a költséghely számot:") || (terulet === "M2B-terület" ? "15009131" : "15009126");
       if (terulet && nev) {
         if (!gepek[terulet]) gepek[terulet] = [];
         if (!gepek[terulet].some(g => g.nev === nev)) {
@@ -907,7 +937,7 @@
     // Lista inicializálása betöltéskor
     window.onload = function() {
       updateFoglalasLista();
-      updateMachineTable();
+      // Az updateMachineTable itt nem fut, mert a Beállítások lap jelszóval védett
     };
   </script>
 
