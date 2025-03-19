@@ -172,6 +172,9 @@
     #qr-reader-actions button {
       margin-right: 10px;
     }
+    #canvas {
+      display: none !important; /* Canvas végig rejtve marad */
+    }
   </style>
 </head>
 <body>
@@ -251,7 +254,7 @@
       <button id="start-camera-btn" onclick="startQRReader()">Kamera indítása</button>
       <button id="stop-camera-btn" onclick="stopQRReader()" style="display: none;">Kamera leállítása</button>
       <video id="video" style="display: none;"></video>
-      <canvas id="canvas" style="display: none;"></canvas>
+      <canvas id="canvas"></canvas>
       <div id="qr-reader-result"></div>
       <div id="qr-reader-error" class="error"></div>
       <div id="qr-reader-result-table"></div>
@@ -273,7 +276,7 @@
             <th>Költséghely Szám</th>
             <th>Kivet/Bevétel</th>
             <th>Raktár</th>
-            <th>Darabszam</th>
+            <th>Darabszám</th>
             <th>QR Kód</th>
             <th>Dátum</th>
             <th>Művelet</th>
@@ -448,7 +451,7 @@
 
     let videoStream = null;
     let isScanning = false;
-    let lastFoglalas = null; // Ideiglenesen tároljuk a beolvasott foglalást
+    let lastFoglalas = null;
 
     function startQRReader() {
       if (isScanning) {
@@ -466,8 +469,8 @@
           video.srcObject = stream;
           video.play();
           isScanning = true;
-          video.style.display = "block";
-          canvas.style.display = "block";
+          video.style.display = "block"; // Csak a video elemet tesszük láthatóvá
+          canvas.style.display = "none"; // Canvas rejtve marad
           document.getElementById("start-camera-btn").style.display = "none";
           document.getElementById("stop-camera-btn").style.display = "inline";
           document.getElementById("qr-reader-error").textContent = "";
@@ -507,10 +510,11 @@
         videoStream.getTracks().forEach(track => track.stop());
         videoStream = null;
         isScanning = false;
-        document.getElementById("video").style.display = "none";
-        document.getElementById("canvas").style.display = "none";
+        const video = document.getElementById("video");
+        video.style.display = "none"; // Video elrejtése
         document.getElementById("start-camera-btn").style.display = "inline";
         document.getElementById("stop-camera-btn").style.display = "none";
+        document.getElementById("qr-reader-result").textContent = "";
       }
     }
 
